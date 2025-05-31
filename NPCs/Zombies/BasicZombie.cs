@@ -1,3 +1,4 @@
+using System.IO;
 using Terraria;
 using Terraria.ID;
 using Microsoft.Xna.Framework;
@@ -9,18 +10,19 @@ namespace PvZMOD.NPCs.Zombies
 {
     public class BasicZombie : ModNPC
     {
+        public bool isEating = false;
+        public bool isDying = false;
+        private int frameSpeed = 5;
+        private int walkingFrameStart = 0;
+        private int walkingFrameEnd = 6;
+        private int eatingFrameStart = 7;
+        private int eatingFrameEnd = 13;
+        private int dyingFrameStart = 14;
+        private int dyingFrameEnd = 22;
+
         public override void SetStaticDefaults()
         {
-            Main.npcFrameCount[Type] = 14;
-
-            // Attack frames
-            NPCID.Sets.AttackFrameCount[Type] = 7;
-            // Attack range
-            NPCID.Sets.DangerDetectRange[Type] = 32; //-1: 200 px
-            // Attack type (3: swing a weapon)
-            NPCID.Sets.AttackType[Type] = 3;
-            // Attack time in ticks
-            NPCID.Sets.AttackTime[Type] = 25;
+            Main.npcFrameCount[Type] = 23;
 
             NPCID.Sets.NPCBestiaryDrawModifiers value = new NPCID.Sets.NPCBestiaryDrawModifiers()
             {
@@ -32,16 +34,16 @@ namespace PvZMOD.NPCs.Zombies
 
         public override void SetDefaults()
         {
-            NPC.width = 32;
+            NPC.width = 42;
             NPC.height = 48;
             NPC.damage = 16;
             NPC.defense = 6;
-            NPC.lifeMax = 100;
+            NPC.lifeMax = 75;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath2;
             NPC.value = 50f;
-            NPC.knockBackResist = .5f;
-            NPC.aiStyle = 3;
+            NPC.knockBackResist = .75f;
+            NPC.aiStyle = -1;
             AIType = NPCID.Zombie;
             Banner = Item.NPCtoBanner(NPCID.Zombie);
             BannerItem = Item.BannerToItem(Banner);
@@ -57,60 +59,62 @@ namespace PvZMOD.NPCs.Zombies
 
         public override void HitEffect(NPC.HitInfo hit)
         {
-            for (int k = 0; k < 20; k++)
-            {
-                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
-                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
-            }
+            // for (int k = 0; k < 20; k++)
+            // {
+            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
+            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
+            // }
 
-            if (NPC.life <= 0 && Main.netMode != NetmodeID.Server)
+            // if (NPC.life <= 0 && Main.netMode != NetmodeID.Server)
+            // {
+            //     // for (int i = 1; i < 4; ++i)
+            //     //     Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("DiverZombie" + i).Type, 1f);
+            // }
+            // Animación de muerte
+            if (NPC.life <= 0)
             {
-                // for (int i = 1; i < 4; ++i)
-                //     Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("DiverZombie" + i).Type, 1f);
+                NPC.frame.Y = NPC.height * dyingFrameStart;
+                NPC.life = 1;
+                NPC.velocity = Vector2.Zero;
+                NPC.dontTakeDamage = true;
+                isDying = true;
+                NPC.netUpdate = true;
             }
         }
 
-        int frameTimer;
-        int frame;
-
+        int deathFrameCounter;
         public override void AI()
         {
-            NPC.spriteDirection = NPC.direction;
-            frameTimer++;
-            if (NPC.wet)
+            if (isDying)
             {
-                // NPC.noGravity = true;
-                NPC.velocity.Y *= .9f;
-                NPC.velocity.Y -= .09f;
-                NPC.velocity.X *= .95f;
-                NPC.rotation = NPC.velocity.X * .1f;
-                if (frameTimer >= 10)
+                NPC.velocity = Vector2.Zero;
+                NPC.aiStyle = -1;
+
+                deathFrameCounter++;
+                if (deathFrameCounter >= (frameSpeed * (dyingFrameEnd - dyingFrameStart) * 2))
                 {
-                    frame++;
-                    frameTimer = 0;
+                    NPC.life = 0;
+                    NPC.checkDead();
                 }
 
-                // if (frame > 6 || frame < 2)
-                if (frame > 6)
-                    frame = 0;
+                return;
+            }
+
+            Player target = Main.player[NPC.target];
+
+            if (Vector2.Distance(NPC.Center, target.Center) <= 24f)
+            {
+                NPC.aiStyle = -1;
+                NPC.velocity.X = 0f;
+                isEating = true;
             }
             else
             {
-                NPC.noGravity = false;
-                if (NPC.velocity.Y != 0)
-                    frame = 0;
-                else
-                {
-                    if (frameTimer >= 10)
-                    {
-                        frame++;
-                        frameTimer = 0;
-                    }
-
-                    if (frame > 6)
-                        frame = 0;
-                }
+                NPC.aiStyle = 3;
+                isEating = false;
             }
+
+            NPC.spriteDirection = NPC.direction;
         }
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
@@ -123,16 +127,54 @@ namespace PvZMOD.NPCs.Zombies
 
         public override void FindFrame(int frameHeight)
         {
-            if (NPC.IsABestiaryIconDummy)
+            if (isDying)
             {
-                if (++frameTimer >= 10)
+                if (NPC.frameCounter++ >= frameSpeed)
                 {
-                    frameTimer = 0;
-                    frame = ++frame % 3;
+                    NPC.frameCounter = 0;
+                    NPC.frame.Y += frameHeight;
+
+                    if (NPC.frame.Y > dyingFrameEnd * frameHeight)
+                    {
+                        NPC.frame.Y = dyingFrameEnd * frameHeight;
+                    }
+                }
+                return;
+            }
+
+            if (NPC.velocity.X != 0f || NPC.IsABestiaryIconDummy)
+            {
+                // frame speed
+                if (NPC.frameCounter++ >= frameSpeed)
+                {
+                    NPC.frame.Y += frameHeight;
+                    NPC.frameCounter = 0;
+                }
+
+                if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > walkingFrameEnd * frameHeight)
+                    NPC.frame.Y = walkingFrameStart * frameHeight;
+            }
+            else
+            {
+                if (isEating)
+                {
+                    if (NPC.frameCounter++ >= frameSpeed)
+                    {
+                        NPC.frame.Y += frameHeight;
+                        NPC.frameCounter = 0;
+                    }
+
+                    if (NPC.frame.Y < eatingFrameStart * frameHeight || NPC.frame.Y > eatingFrameEnd * frameHeight)
+                        NPC.frame.Y = eatingFrameStart * frameHeight;
+                }
+                else
+                {
+                    // IDK
+                    NPC.frame.Y = 0 * frameHeight;
                 }
             }
 
-            NPC.frame.Y = frameHeight * frame;
+            // NPC.frame.Y = frameHeight * frame;
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot)
@@ -140,6 +182,18 @@ namespace PvZMOD.NPCs.Zombies
             npcLoot.Add(ItemDropRule.Common(ItemID.Shackle, 50));
             npcLoot.Add(ItemDropRule.Common(ItemID.ZombieArm, 250));
             // npcLoot.AddOneFromOptions(65, ModContent.ItemType<DiverLegs>(), ModContent.ItemType<DiverHead>(), ModContent.ItemType<DiverBody>());
+        }
+
+        public override void SendExtraAI(BinaryWriter writer)
+        {
+            writer.Write(isEating);
+            writer.Write(isDying);
+        }
+
+        public override void ReceiveExtraAI(BinaryReader reader)
+        {
+            isEating = reader.ReadBoolean();
+            isDying = reader.ReadBoolean();
         }
     }
 }

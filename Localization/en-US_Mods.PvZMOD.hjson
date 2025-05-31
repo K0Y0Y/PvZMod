@@ -1,15 +1,6 @@
 # This file will automatically update with entries for new content after a build and reload.
 
 Items: {
-#	testSword: {
-#		DisplayName: test Sword
-#		Tooltip:
-#			'''
-#			Template of an item
-#			Replacing this tooltip is duty 
-#			It's snowing on Mt.Fuji
-#			'''
-#	}
 }
 
 NPCs.BasicZombie.DisplayName: Basic Zombie
