@@ -1,0 +1,3 @@
+displayName = PvZ Mod
+author = K0Y0Y
+version = 0.1
