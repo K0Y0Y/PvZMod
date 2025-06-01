@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Microsoft.Xna.Framework;
 using Terraria.ModLoader;
-// using Terraria.GameContent.Bestiary;
+using Terraria.GameContent.Bestiary;
 using Terraria.GameContent.ItemDropRules;
 
 namespace PvZMOD.NPCs.Zombies
@@ -12,22 +12,26 @@ namespace PvZMOD.NPCs.Zombies
     {
         public bool isEating = false;
         public bool isDying = false;
-        private int frameSpeed = 5;
+        public bool isInjured = false;
+        private int frameSpeed = 6;
         private int walkingFrameStart = 0;
         private int walkingFrameEnd = 6;
         private int eatingFrameStart = 7;
         private int eatingFrameEnd = 13;
-        private int dyingFrameStart = 14;
-        private int dyingFrameEnd = 22;
+        private int walkingInjuredFrameStart = 14;
+        private int walkingInjuredFrameEnd = 20;
+        private int eatingInjuredFrameStart = 21;
+        private int eatingInjuredFrameEnd = 27;
+        private int dyingFrameStart = 28;
+        private int dyingFrameEnd = 36;
 
         public override void SetStaticDefaults()
         {
-            Main.npcFrameCount[Type] = 23;
+            Main.npcFrameCount[Type] = 37;
 
             NPCID.Sets.NPCBestiaryDrawModifiers value = new NPCID.Sets.NPCBestiaryDrawModifiers()
             {
-                // Influences how the NPC looks in the Bestiary
-                Velocity = 1f // Draws the NPC in the bestiary as if its walking +1 tiles in the x direction
+                Velocity = 1f
             };
             NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, value);
         }
@@ -36,9 +40,9 @@ namespace PvZMOD.NPCs.Zombies
         {
             NPC.width = 42;
             NPC.height = 48;
-            NPC.damage = 16;
-            NPC.defense = 6;
-            NPC.lifeMax = 75;
+            NPC.damage = 20;
+            NPC.defense = 4;
+            NPC.lifeMax = 50;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath2;
             NPC.value = 50f;
@@ -49,36 +53,46 @@ namespace PvZMOD.NPCs.Zombies
             BannerItem = Item.BannerToItem(Banner);
         }
 
-        // public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) => bestiaryEntry.Info.AddRange([
-        //     BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Biomes.Surface,
+        public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) => bestiaryEntry.Info.AddRange([
+            BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Times.NightTime,
 
-        //     new FlavorTextBestiaryInfoElement("Mods.PvZDS.Bestiary.BasicZombie"),
-
-        //     new FlavorTextBestiaryInfoElement("Mods.PvZDS.Bestiary.BasicZombie")
-        // ]);
+            new FlavorTextBestiaryInfoElement("Mods.Bestiary.BasicZombie"),
+        ]);
 
         public override void HitEffect(NPC.HitInfo hit)
         {
-            // for (int k = 0; k < 20; k++)
-            // {
-            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
-            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
-            // }
+            for (int k = 0; k < 20; k++)
+            {
+                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
+                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
+            }
 
             // if (NPC.life <= 0 && Main.netMode != NetmodeID.Server)
             // {
             //     // for (int i = 1; i < 4; ++i)
             //     //     Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("DiverZombie" + i).Type, 1f);
             // }
+
             // Animación de muerte
-            if (NPC.life <= 0)
+            if (!isDying && NPC.life <= 0 && Main.netMode != NetmodeID.Server)
             {
                 NPC.frame.Y = NPC.height * dyingFrameStart;
                 NPC.life = 1;
+                NPC.damage = 0;
                 NPC.velocity = Vector2.Zero;
                 NPC.dontTakeDamage = true;
                 isDying = true;
                 NPC.netUpdate = true;
+
+                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("BasicZombieHead").Type, 1f);
+            }
+
+            if (!isInjured && NPC.life <= (NPC.lifeMax / 2) && Main.netMode != NetmodeID.Server)
+            {
+                isInjured = true;
+                NPC.netUpdate = true;
+
+                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("BasicZombieArm").Type, 1f);
             }
         }
 
@@ -151,8 +165,16 @@ namespace PvZMOD.NPCs.Zombies
                     NPC.frameCounter = 0;
                 }
 
-                if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > walkingFrameEnd * frameHeight)
-                    NPC.frame.Y = walkingFrameStart * frameHeight;
+                if (!isInjured)
+                {
+                    if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > walkingFrameEnd * frameHeight)
+                        NPC.frame.Y = walkingFrameStart * frameHeight;
+                }
+                else
+                {
+                    if (NPC.frame.Y < walkingInjuredFrameStart * frameHeight || NPC.frame.Y > walkingInjuredFrameEnd * frameHeight)
+                        NPC.frame.Y = walkingInjuredFrameStart * frameHeight;
+                }
             }
             else
             {
@@ -164,8 +186,16 @@ namespace PvZMOD.NPCs.Zombies
                         NPC.frameCounter = 0;
                     }
 
-                    if (NPC.frame.Y < eatingFrameStart * frameHeight || NPC.frame.Y > eatingFrameEnd * frameHeight)
-                        NPC.frame.Y = eatingFrameStart * frameHeight;
+                    if (!isInjured)
+                    {
+                        if (NPC.frame.Y < eatingFrameStart * frameHeight || NPC.frame.Y > eatingFrameEnd * frameHeight)
+                            NPC.frame.Y = eatingFrameStart * frameHeight;
+                    }
+                    else
+                    {
+                        if (NPC.frame.Y < eatingInjuredFrameStart * frameHeight || NPC.frame.Y > eatingInjuredFrameEnd * frameHeight)
+                            NPC.frame.Y = eatingInjuredFrameStart * frameHeight;
+                    }
                 }
                 else
                 {
@@ -188,12 +218,14 @@ namespace PvZMOD.NPCs.Zombies
         {
             writer.Write(isEating);
             writer.Write(isDying);
+            writer.Write(isInjured);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader)
         {
             isEating = reader.ReadBoolean();
             isDying = reader.ReadBoolean();
+            isInjured = reader.ReadBoolean();
         }
     }
 }
