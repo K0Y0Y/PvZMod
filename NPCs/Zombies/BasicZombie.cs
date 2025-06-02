@@ -67,13 +67,6 @@ namespace PvZMOD.NPCs.Zombies
                 Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
             }
 
-            // if (NPC.life <= 0 && Main.netMode != NetmodeID.Server)
-            // {
-            //     // for (int i = 1; i < 4; ++i)
-            //     //     Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("DiverZombie" + i).Type, 1f);
-            // }
-
-            // Animación de muerte
             if (!isDying && NPC.life <= 0 && Main.netMode != NetmodeID.Server)
             {
                 NPC.frame.Y = NPC.height * dyingFrameStart;
@@ -211,7 +204,6 @@ namespace PvZMOD.NPCs.Zombies
         {
             npcLoot.Add(ItemDropRule.Common(ItemID.Shackle, 50));
             npcLoot.Add(ItemDropRule.Common(ItemID.ZombieArm, 250));
-            // npcLoot.AddOneFromOptions(65, ModContent.ItemType<DiverLegs>(), ModContent.ItemType<DiverHead>(), ModContent.ItemType<DiverBody>());
         }
 
         public override void SendExtraAI(BinaryWriter writer)
