@@ -8,4 +8,7 @@ Mods: {
 	NPCs.BasicZombie.DisplayName: Basic Zombie
 }
 
-NPCs.BasicZombie.DisplayName: Basic Zombie
+NPCs: {
+	BasicZombie.DisplayName: Basic Zombie
+	ConeheadZombie.DisplayName: Conehead Zombie
+}
