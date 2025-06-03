@@ -35,7 +35,7 @@ namespace PvZMOD.NPCs.Zombies
 
             NPCID.Sets.NPCBestiaryDrawModifiers value = new NPCID.Sets.NPCBestiaryDrawModifiers()
             {
-                Velocity = 1f
+                Velocity = 0.5f
             };
             NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, value);
         }
