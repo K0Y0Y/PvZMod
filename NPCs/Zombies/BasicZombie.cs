@@ -11,17 +11,21 @@ namespace PvZMOD.NPCs.Zombies
     public class BasicZombie : ModNPC
     {
         public bool isEating = false;
-        public bool isDying = false;
         public bool isInjured = false;
+        public bool isDying = false;
+
         private int frameSpeed = 6;
+
         private int walkingFrameStart = 0;
         private int walkingFrameEnd = 6;
         private int eatingFrameStart = 7;
         private int eatingFrameEnd = 13;
+
         private int walkingInjuredFrameStart = 14;
         private int walkingInjuredFrameEnd = 20;
         private int eatingInjuredFrameStart = 21;
         private int eatingInjuredFrameEnd = 27;
+
         private int dyingFrameStart = 28;
         private int dyingFrameEnd = 36;
 
@@ -61,11 +65,11 @@ namespace PvZMOD.NPCs.Zombies
 
         public override void HitEffect(NPC.HitInfo hit)
         {
-            for (int k = 0; k < 20; k++)
-            {
-                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
-                Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
-            }
+            // for (int k = 0; k < 20; k++)
+            // {
+            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, Color.White, 0.78f);
+            //     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Blood, 2.5f * hit.HitDirection, -2.5f, 0, default, .54f);
+            // }
 
             if (!isDying && NPC.life <= 0 && Main.netMode != NetmodeID.Server)
             {
