@@ -4,11 +4,20 @@ Mods: {
 	Items: {
 	}
 
-	Bestiary.BasicZombie: This zombies loves brains. Can't get enough. Brains, brains, brains, day in and night out. Old and stinky brains? Rotten brains? Brains clearly past their prime? Doesn't matter. Regular zombie wants 'em.
-	NPCs.BasicZombie.DisplayName: Basic Zombie
+	Bestiary: {
+		BasicZombie: This zombies loves brains. Can't get enough. Brains, brains, brains, day in and night out. Old and stinky brains? Rotten brains? Brains clearly past their prime? Doesn't matter. Regular zombie wants 'em.
+		ConeheadZombie: Conehead Zombie shuffled mindlessly forward like every other zombie. But something made him stop, made him pick up a traffic cone and stick it on his head. Oh yeah. He likes to party.
+	}
+
+	NPCs: {
+		BasicZombie.DisplayName: Basic Zombie
+		ConeheadZombie.DisplayName: Conehead Zombie
+	}
 }
 
 NPCs: {
 	BasicZombie.DisplayName: Basic Zombie
 	ConeheadZombie.DisplayName: Conehead Zombie
+	BucketheadZombie.DisplayName: Buckethead Zombie
+	ImpZombie.DisplayName: Imp Zombie
 }
