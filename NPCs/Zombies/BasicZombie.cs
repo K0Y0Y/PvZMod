@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Terraria.ModLoader;
 using Terraria.GameContent.Bestiary;
 using Terraria.GameContent.ItemDropRules;
+using Terraria.Audio;
 
 namespace PvZMOD.NPCs.Zombies
 {
@@ -50,7 +51,7 @@ namespace PvZMOD.NPCs.Zombies
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath2;
             NPC.value = 50f;
-            NPC.knockBackResist = .75f;
+            NPC.knockBackResist = .9f;
             NPC.aiStyle = -1;
             AIType = NPCID.Zombie;
             Banner = Item.NPCtoBanner(NPCID.Zombie);
@@ -82,6 +83,10 @@ namespace PvZMOD.NPCs.Zombies
                 NPC.netUpdate = true;
 
                 Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("BasicZombieHead").Type, 1f);
+                NPC.DeathSound = NPC.HitSound = new SoundStyle($"PvZMOD/Sounds/Zombies/Falling") with
+                {
+                    Volume = 0.5f
+                };
             }
 
             if (!isInjured && NPC.life <= (NPC.lifeMax / 2) && Main.netMode != NetmodeID.Server)
@@ -113,11 +118,17 @@ namespace PvZMOD.NPCs.Zombies
 
             Player target = Main.player[NPC.target];
 
-            if (Vector2.Distance(NPC.Center, target.Center) <= 24f)
+            if (Vector2.Distance(NPC.Center, target.Center) <= 28f)
             {
                 NPC.aiStyle = -1;
                 NPC.velocity.X = 0f;
                 isEating = true;
+                SoundEngine.PlaySound(new SoundStyle($"PvZMOD/Sounds/Zombies/Eating_", 2) with
+                {
+                    Volume = 0.5f,
+                    MaxInstances = 1,
+                    SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
+                });
             }
             else
             {
