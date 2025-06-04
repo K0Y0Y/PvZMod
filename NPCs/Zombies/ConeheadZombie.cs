@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Terraria.ModLoader;
 using Terraria.GameContent.Bestiary;
 // using Terraria.GameContent.ItemDropRules;
+using Terraria.Audio;
 
 namespace PvZMOD.NPCs.Zombies
 {
@@ -61,8 +62,12 @@ namespace PvZMOD.NPCs.Zombies
             NPC.damage = 20;
             NPC.defense = 4;
             NPC.lifeMax = 100;
-            NPC.HitSound = SoundID.NPCHit1;
-            NPC.DeathSound = SoundID.NPCDeath2;
+            NPC.HitSound = new SoundStyle($"PvZMOD/Sounds/Zombies/Cone") with
+            {
+                Volume = 0.25f,
+                // SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
+            };
+            // NPC.DeathSound = SoundID.NPCDeath2;
             NPC.value = 50f;
             NPC.knockBackResist = .25f;
             NPC.aiStyle = -1;
@@ -84,7 +89,7 @@ namespace PvZMOD.NPCs.Zombies
 
             if (NPC.life <= 0)
             {
-                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("Conehead").Type, 1f);
+                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("Cone").Type, 1f);
                 NPC.netUpdate = true;
                 return;
             }
@@ -113,6 +118,12 @@ namespace PvZMOD.NPCs.Zombies
                 NPC.aiStyle = -1;
                 NPC.velocity.X = 0f;
                 zombieStatus = npcStatus.EATING;
+                SoundEngine.PlaySound(new SoundStyle($"PvZMOD/Sounds/Zombies/Eating_", 2) with
+                {
+                    Volume = 0.5f,
+                    MaxInstances = 1,
+                    SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
+                });
             }
             else
             {
@@ -126,7 +137,7 @@ namespace PvZMOD.NPCs.Zombies
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
         {
             if (!Main.dayTime && spawnInfo.Player.ZoneOverworldHeight)
-                return 0.1f;
+                return 0.08f;
 
             return 0;
         }
