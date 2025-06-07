@@ -13,14 +13,14 @@ namespace PvZMOD.NPCs.Zombies
     {
         public enum npcStatus : byte
         {
-            WALKING, //0-6m,14-20
-            EATING, //7-13,21-27
+            WALKING,
+            EATING,
         }
         public enum armorStatus : byte
         {
-            GOOD, // 0-13
-            DAMAGED, //13-27
-            RUINED, //28-41
+            GOOD,
+            DAMAGED,
+            RUINED,
         }
         public npcStatus zombieStatus = npcStatus.WALKING;
         public armorStatus coneStatus = armorStatus.GOOD;
@@ -50,7 +50,7 @@ namespace PvZMOD.NPCs.Zombies
 
             NPCID.Sets.NPCBestiaryDrawModifiers value = new NPCID.Sets.NPCBestiaryDrawModifiers()
             {
-                Velocity = .5f
+                Velocity = 1f
             };
             NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, value);
         }
@@ -93,15 +93,13 @@ namespace PvZMOD.NPCs.Zombies
                 NPC.netUpdate = true;
                 return;
             }
-
-            if (NPC.life <= (NPC.lifeMax * 0.5) && !coneStatus.Equals(armorStatus.RUINED))
+            else if (NPC.life <= (NPC.lifeMax * 0.5))
             {
                 coneStatus = armorStatus.RUINED;
                 NPC.netUpdate = true;
                 return;
             }
-
-            if (NPC.life <= (NPC.lifeMax * 0.75) && !coneStatus.Equals(armorStatus.DAMAGED))
+            else if (NPC.life <= (NPC.lifeMax * 0.75))
             {
                 coneStatus = armorStatus.DAMAGED;
                 NPC.netUpdate = true;
@@ -115,6 +113,24 @@ namespace PvZMOD.NPCs.Zombies
 
             if (Vector2.Distance(NPC.Center, target.Center) <= 28f)
             {
+                switch (coneStatus)
+                {
+                    case armorStatus.GOOD:
+                        statusFrameStart = eatingFrameStart; // 7
+                        statusFrameEnd = eatingFrameEnd; // 13
+                        break;
+                    case armorStatus.DAMAGED:
+                        statusFrameStart = eatingDamagedFrameStart; // 21
+                        statusFrameEnd = eatingDamagedFrameEnd; // 27
+                        break;
+                    case armorStatus.RUINED:
+                        statusFrameStart = eatingRuinedFrameStart; //35
+                        statusFrameEnd = eatingRuinedFrameEnd; // 41
+                        break;
+                    default:
+                        break;
+                }
+
                 NPC.aiStyle = -1;
                 NPC.velocity.X = 0f;
                 zombieStatus = npcStatus.EATING;
@@ -127,6 +143,24 @@ namespace PvZMOD.NPCs.Zombies
             }
             else
             {
+                switch (coneStatus)
+                {
+                    case armorStatus.GOOD:
+                        statusFrameStart = walkingFrameStart; // 0
+                        statusFrameEnd = walkingFrameEnd; // 6
+                        break;
+                    case armorStatus.DAMAGED:
+                        statusFrameStart = walkingDamagedFrameStart; // 14
+                        statusFrameEnd = walkingDamagedFrameEnd; // 20
+                        break;
+                    case armorStatus.RUINED:
+                        statusFrameStart = walkingRuinedFrameStart; // 28
+                        statusFrameEnd = walkingRuinedFrameEnd; // 34
+                        break;
+                    default:
+                        break;
+                }
+
                 NPC.aiStyle = 3;
                 zombieStatus = npcStatus.WALKING;
             }
@@ -154,55 +188,17 @@ namespace PvZMOD.NPCs.Zombies
             if (NPC.IsABestiaryIconDummy)
             {
                 if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > walkingFrameEnd * frameHeight)
+                {
                     NPC.frame.Y = walkingFrameStart * frameHeight;
+                    NPC.frameCounter = 0;
+                }
                 return;
             }
-            else
-            {
-                if (zombieStatus.Equals(npcStatus.WALKING))
-                {
-                    switch (coneStatus)
-                    {
-                        case armorStatus.GOOD:
-                            statusFrameStart = walkingFrameStart; // 0
-                            statusFrameEnd = walkingFrameEnd; // 6
-                            break;
-                        case armorStatus.DAMAGED:
-                            statusFrameStart = walkingDamagedFrameStart; // 14
-                            statusFrameEnd = walkingDamagedFrameEnd; // 20
-                            break;
-                        case armorStatus.RUINED:
-                            statusFrameStart = walkingRuinedFrameStart; // 28
-                            statusFrameEnd = walkingRuinedFrameEnd; // 34
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                else
-                {
-                    switch (coneStatus)
-                    {
-                        case armorStatus.GOOD:
-                            statusFrameStart = eatingFrameStart; // 7
-                            statusFrameEnd = eatingFrameEnd; // 13
-                            break;
-                        case armorStatus.DAMAGED:
-                            statusFrameStart = eatingDamagedFrameStart; // 21
-                            statusFrameEnd = eatingDamagedFrameEnd; // 27
-                            break;
-                        case armorStatus.RUINED:
-                            statusFrameStart = eatingRuinedFrameStart; //35
-                            statusFrameEnd = eatingRuinedFrameEnd; // 41
-                            break;
-                        default:
-                            break;
-                    }
-                }
 
-                // animation frame
-                if (NPC.frame.Y < (statusFrameStart * frameHeight) || NPC.frame.Y > (statusFrameEnd * frameHeight))
-                    NPC.frame.Y = statusFrameStart * frameHeight;
+            if (NPC.frame.Y < (statusFrameStart * frameHeight) || NPC.frame.Y > (statusFrameEnd * frameHeight))
+            {
+                NPC.frame.Y = statusFrameStart * frameHeight;
+                NPC.frameCounter = 0;
             }
         }
 
@@ -214,7 +210,7 @@ namespace PvZMOD.NPCs.Zombies
         {
             if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                NPC.NewNPC(NPC.GetSource_Death(), (int)NPC.Center.X, (int)NPC.Bottom.Y, ModContent.NPCType<BasicZombie>());
+                NPC.NewNPC(NPC.GetSource_Death(), (int)NPC.Center.X, (int)NPC.Bottom.Y - 1, ModContent.NPCType<BasicZombie>());
             }
         }
     }

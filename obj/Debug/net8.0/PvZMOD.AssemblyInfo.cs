@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PvZMOD")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c1cdb07ae9356a8a7fc82ee32f2417bf56c88062")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e84614d8e88fb37f7e0aa9a9d62a79c3fcc63db")]
 [assembly: System.Reflection.AssemblyProductAttribute("PvZMOD")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PvZMOD")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
