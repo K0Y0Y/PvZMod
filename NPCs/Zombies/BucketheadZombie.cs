@@ -46,7 +46,7 @@ namespace PvZMOD.NPCs.Zombies
 
         public override void SetStaticDefaults()
         {
-            Main.npcFrameCount[Type] = 28;
+            Main.npcFrameCount[Type] = 42;
 
             NPCID.Sets.NPCBestiaryDrawModifiers value = new NPCID.Sets.NPCBestiaryDrawModifiers()
             {
@@ -58,7 +58,7 @@ namespace PvZMOD.NPCs.Zombies
         public override void SetDefaults()
         {
             NPC.width = 42;
-            NPC.height = 60;
+            NPC.height = 55;
             NPC.damage = 20;
             NPC.defense = 4;
             NPC.lifeMax = 200;
@@ -95,12 +95,12 @@ namespace PvZMOD.NPCs.Zombies
                 return;
             }
 
-            // if (!coneStatus.Equals(armorStatus.RUINED) && NPC.life <= (NPC.lifeMax * 0.5))
-            // {
-            //     coneStatus = armorStatus.RUINED;
-            //     NPC.netUpdate = true;
-            //     return;
-            // }
+            if (!coneStatus.Equals(armorStatus.RUINED) && NPC.life <= (NPC.lifeMax * 0.5))
+            {
+                coneStatus = armorStatus.RUINED;
+                NPC.netUpdate = true;
+                return;
+            }
 
             if (!coneStatus.Equals(armorStatus.DAMAGED) && NPC.life <= (NPC.lifeMax * 0.75))
             {
