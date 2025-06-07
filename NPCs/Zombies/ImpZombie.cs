@@ -14,10 +14,10 @@ namespace PvZMOD.NPCs.Zombies
     {
         public enum npcActionStatus : byte
         {
-            WALKING, //0-7
-            EATING, //8-14
-            DYING,
-            WALKING_DEAD
+            WALKING,
+            EATING,
+            WALKING_DEAD,
+            DYING
         }
         public enum npcHealthStatus : byte
         {
@@ -28,9 +28,11 @@ namespace PvZMOD.NPCs.Zombies
         public npcActionStatus zombieActionStatus = npcActionStatus.WALKING;
         public npcHealthStatus zombieHealthStatus = npcHealthStatus.HEALTHY;
 
+        private static readonly Random random = new Random();
+
         private int frameSpeed = 5;
         private int statusFrameStart = 0;
-        private int statusFrameEnd = 6;
+        private int statusFrameEnd = 7;
 
         private int walkingFrameStart = 0;
         private int walkingFrameEnd = 7;
@@ -42,10 +44,10 @@ namespace PvZMOD.NPCs.Zombies
         private int eatingDamagedFrameStart = 24;
         private int eatingDamagedFrameEnd = 31;
 
-        private int dyingFrameStart = 32;
-        private int dyingFrameEnd = 37;
-        private int specialDyingFrameStart = 38;
-        private int specialDyingFrameEnd = 45; //?
+        private int specialDyingFrameStart = 32;
+        private int specialDyingFrameEnd = 39;
+        private int dyingFrameStart = 40;
+        private int dyingFrameEnd = 45;
 
         private int timeToDead = 0;
 
@@ -74,11 +76,9 @@ namespace PvZMOD.NPCs.Zombies
             // };
             NPC.DeathSound = SoundID.NPCDeath2;
             NPC.value = 50f;
-            NPC.knockBackResist = .25f;
+            NPC.knockBackResist = 0f;
             NPC.aiStyle = -1;
             AIType = NPCID.Zombie;
-            // Banner = Item.NPCtoBanner(NPCID.Zombie);
-            // BannerItem = Item.BannerToItem(Banner);
         }
 
         public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) => bestiaryEntry.Info.AddRange([
@@ -97,78 +97,103 @@ namespace PvZMOD.NPCs.Zombies
                 zombieHealthStatus = npcHealthStatus.ZERO;
                 NPC.life = 1;
                 NPC.damage = 0;
-                // NPC.velocity = Vector2.Zero;
                 NPC.dontTakeDamage = true;
                 NPC.netUpdate = true;
 
-                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("ImpZombieHead").Type, 1f);
-                NPC.DeathSound = NPC.HitSound = new SoundStyle($"PvZMOD/Sounds/Zombies/Falling") with
-                {
-                    Volume = 0.5f
-                };
-                return;
-            }
-
-            if (NPC.life <= (NPC.lifeMax * 0.5) && !zombieHealthStatus.Equals(npcHealthStatus.DAMAGED))
-            {
-                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("ImpZombieArm").Type, 1f);
-                zombieHealthStatus = npcHealthStatus.DAMAGED;
-                NPC.netUpdate = true;
-            }
-        }
-
-        int deathFrameCounter;
-        public override void AI()
-        {
-            if (zombieHealthStatus.Equals(npcHealthStatus.ZERO))
-            {
-                if (zombieActionStatus.Equals(npcActionStatus.DYING) || zombieActionStatus.Equals(npcActionStatus.WALKING_DEAD))
-                {
-                    if (deathFrameCounter >= timeToDead)
-                    {
-                        NPC.life = 0;
-                        NPC.checkDead();
-                    }
-                    deathFrameCounter++;
-
-                    return;
-                }
-
-                Random random = new Random();
                 if (random.NextDouble() >= 0.5)
                 {
                     zombieActionStatus = npcActionStatus.DYING;
                     NPC.frame.Y = NPC.height * dyingFrameStart;
-                    NPC.velocity = Vector2.Zero;
-                    NPC.aiStyle = -1;
                     timeToDead = frameSpeed * (dyingFrameEnd - dyingFrameStart) * 2;
                 }
                 else
                 {
                     zombieActionStatus = npcActionStatus.WALKING_DEAD;
                     NPC.frame.Y = NPC.height * specialDyingFrameStart;
-                    timeToDead = frameSpeed * (specialDyingFrameEnd - specialDyingFrameStart) * 2;
+                    timeToDead = frameSpeed * (dyingFrameEnd - specialDyingFrameStart) * 2;
                 }
+
+                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("ImpZombieHead").Type, 1f);
+                NPC.DeathSound = NPC.HitSound = new SoundStyle($"PvZMOD/Sounds/Zombies/Falling") with
+                {
+                    Volume = 0.5f
+                };
 
                 return;
             }
 
-            Player target = Main.player[NPC.target];
-
-            if (Vector2.Distance(NPC.Center, target.Center) <= 24f)
+            if (NPC.life <= (NPC.lifeMax * 0.5) && !zombieHealthStatus.Equals(npcHealthStatus.DAMAGED))
             {
+                zombieHealthStatus = npcHealthStatus.DAMAGED;
+                NPC.netUpdate = true;
+                Gore.NewGore(NPC.GetSource_Death(), NPC.position, NPC.velocity, Mod.Find<ModGore>("ImpZombieArm").Type, 1f);
+            }
+        }
+
+        int deathFrameCounter;
+        int eatingSoundCooldown;
+        public override void AI()
+        {
+            if (zombieHealthStatus.Equals(npcHealthStatus.ZERO))
+            {
+                if (!(zombieActionStatus.Equals(npcActionStatus.DYING) || zombieActionStatus.Equals(npcActionStatus.WALKING_DEAD)))
+                    return;
+
+                if (deathFrameCounter >= timeToDead)
+                {
+                    NPC.life = 0;
+                    NPC.checkDead();
+                    NPC.active = false;
+                }
+                deathFrameCounter++;
+
+                return;
+            }
+
+            Player targetPlayer = Main.player[NPC.target];
+
+            if (Vector2.Distance(NPC.Center, targetPlayer.Center) <= 24f)
+            {
+                if (zombieHealthStatus.Equals(npcHealthStatus.HEALTHY))
+                {
+                    statusFrameStart = eatingFrameStart;
+                    statusFrameEnd = eatingFrameEnd;
+                }
+                else
+                {
+                    statusFrameStart = eatingDamagedFrameStart;
+                    statusFrameEnd = eatingDamagedFrameEnd;
+                }
+
                 NPC.aiStyle = -1;
                 NPC.velocity.X = 0f;
                 zombieActionStatus = npcActionStatus.EATING;
-                SoundEngine.PlaySound(new SoundStyle($"PvZMOD/Sounds/Zombies/Eating_", 2) with
+                if (eatingSoundCooldown <= 0)
                 {
-                    Volume = 0.5f,
-                    MaxInstances = 1,
-                    SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
-                });
+                    SoundEngine.PlaySound(new SoundStyle($"PvZMOD/Sounds/Zombies/Eating_", 2) with
+                    {
+                        Volume = 0.5f,
+                        MaxInstances = 1,
+                        SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
+                    });
+                    eatingSoundCooldown = frameSpeed * 2;
+                }
+                else
+                    eatingSoundCooldown--;
             }
             else
             {
+                if (zombieHealthStatus.Equals(npcHealthStatus.HEALTHY))
+                {
+                    statusFrameStart = walkingFrameStart;
+                    statusFrameEnd = walkingFrameEnd;
+                }
+                else
+                {
+                    statusFrameStart = walkingDamagedFrameStart;
+                    statusFrameEnd = walkingDamagedFrameEnd;
+                }
+
                 NPC.aiStyle = 3;
                 zombieActionStatus = npcActionStatus.WALKING;
             }
@@ -195,68 +220,43 @@ namespace PvZMOD.NPCs.Zombies
 
             if (NPC.IsABestiaryIconDummy)
             {
-                if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > walkingFrameEnd * frameHeight)
+                if (NPC.frame.Y < walkingFrameStart * frameHeight || NPC.frame.Y > dyingFrameEnd * frameHeight)
                     NPC.frame.Y = walkingFrameStart * frameHeight;
-                return;
             }
             else
             {
-                // TODO: Move switch to another function?
-                switch (zombieHealthStatus)
+                if (zombieHealthStatus.Equals(npcHealthStatus.ZERO))
                 {
-                    case npcHealthStatus.HEALTHY:
-                        if (zombieActionStatus.Equals(npcActionStatus.WALKING))
-                        {
-                            statusFrameStart = walkingFrameStart; // 0
-                            statusFrameEnd = walkingFrameEnd; // 7
-                        }
-                        else
-                        {
-                            statusFrameStart = eatingFrameStart; // 8
-                            statusFrameEnd = eatingFrameEnd; // 15
-                        }
-                        break;
-                    case npcHealthStatus.DAMAGED:
-                        if (zombieActionStatus.Equals(npcActionStatus.WALKING))
-                        {
-                            statusFrameStart = walkingDamagedFrameStart; // 16
-                            statusFrameEnd = walkingDamagedFrameEnd; // 23
-                        }
-                        else
-                        {
-                            statusFrameStart = eatingDamagedFrameStart; // 24
-                            statusFrameEnd = eatingDamagedFrameEnd; // 31
-                        }
-                        break;
-                    case npcHealthStatus.ZERO:
-                        if (zombieActionStatus.Equals(npcActionStatus.DYING))
-                        {
-                            if (NPC.frame.Y > dyingFrameEnd * frameHeight)
-                            {
-                                NPC.frame.Y = dyingFrameEnd * frameHeight;
-                                return;
-                            }
-                            statusFrameStart = dyingFrameStart;
-                            statusFrameEnd = dyingFrameEnd;
-                        }
-                        else
-                        {
-                            statusFrameStart = specialDyingFrameStart;
-                            statusFrameEnd = specialDyingFrameEnd;
-                        }
-                        break;
-                    default:
-                        break;
+                    if (NPC.frame.Y >= dyingFrameStart * frameHeight)
+                    {
+                        NPC.velocity = Vector2.Zero;
+                        NPC.aiStyle = -1;
+                    }
+
+                    if (NPC.frame.Y > dyingFrameEnd * frameHeight)
+                    {
+                        NPC.frame.Y = dyingFrameEnd * frameHeight;
+                        return;
+                    }
+
+                    if (zombieActionStatus.Equals(npcActionStatus.WALKING_DEAD))
+                        statusFrameStart = specialDyingFrameStart;
+                    else
+                        statusFrameStart = dyingFrameStart;
+
+                    statusFrameEnd = dyingFrameEnd;
                 }
 
-                // animation frame
                 if (NPC.frame.Y < (statusFrameStart * frameHeight) || NPC.frame.Y > (statusFrameEnd * frameHeight))
+                {
                     NPC.frame.Y = statusFrameStart * frameHeight;
+                    NPC.frameCounter = 0;
+                }
             }
         }
 
-        public override void ModifyNPCLoot(NPCLoot npcLoot)
-        {
-        }
+        // public override void ModifyNPCLoot(NPCLoot npcLoot)
+        // {
+        // }
     }
 }
